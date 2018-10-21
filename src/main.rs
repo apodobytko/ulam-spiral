@@ -1,3 +1,7 @@
+mod sieve;
+
+use self::sieve::generate_primes;
+
 fn main() {
-    println!("Hello, world!");
+    generate_primes(10000);
 }
