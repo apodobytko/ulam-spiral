@@ -15,11 +15,13 @@ fn move_cursor(x: &mut u32, y: &mut u32, direction: &str) {
     }
 }
 
-pub fn generate_spiral(primes: Vec<u64>) {
-    let mut img = image::ImageBuffer::new(1000, 1000);
-    let white_pixel = image::Luma([255]);
-    let mut x = 500;
-    let mut y = 500;
+pub fn generate_spiral(primes: Vec<u64>) -> Vec<u8> {
+    let x_size = 500;
+    let y_size = 500;
+    let mut img = image::ImageBuffer::new(x_size, y_size);
+    let white_pixel = image::Rgb([255, 0, 0]);
+    let mut x = x_size / 2;
+    let mut y = y_size / 2;
     let mut counter = 0;
     let mut times = 0;
     let primes_len = primes.len();
@@ -66,6 +68,11 @@ pub fn generate_spiral(primes: Vec<u64>) {
         }
     }
     img.save("image.png").unwrap();
+    let mut buf = Vec::new();
+    let dynamic_image = image::DynamicImage::ImageRgb8(img);
+    dynamic_image.write_to(&mut buf, image::ImageOutputFormat::PNG)
+                 .expect("Failed to write the buffer!");
+    buf
 }
 
 #[cfg(test)]

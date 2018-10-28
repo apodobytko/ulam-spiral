@@ -6,3 +6,8 @@ edition = "2018"
 
 [dependencies]
 image = "*"
+glib = "*"
+gio = "*"
+gdk = "*"
+gtk = "*"
+gdk-pixbuf = "*"
