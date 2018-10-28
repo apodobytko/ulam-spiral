@@ -67,3 +67,50 @@ pub fn generate_spiral(primes: Vec<u64>) {
     }
     img.save("image.png").unwrap();
 }
+
+#[cfg(test)]
+mod tests {
+
+    use self::super::move_cursor;
+
+    #[test]
+    fn test_move_cursor_up() {
+        let mut x = 100;
+        let mut y = 100;
+        move_cursor(&mut x, &mut y, "up");
+
+        assert_eq!(x, 100);
+        assert_eq!(y, 98);
+    }
+
+    #[test]
+    fn test_move_cursor_right() {
+        let mut x = 100;
+        let mut y = 100;
+        move_cursor(&mut x, &mut y, "right");
+
+        assert_eq!(x, 102);
+        assert_eq!(y, 100);
+    }
+
+    #[test]
+    fn test_move_cursor_down() {
+        let mut x = 100;
+        let mut y = 100;
+        move_cursor(&mut x, &mut y, "down");
+
+        assert_eq!(x, 100);
+        assert_eq!(y, 102);
+    }
+
+    #[test]
+    fn test_move_cursor_left() {
+        let mut x = 100;
+        let mut y = 100;
+        move_cursor(&mut x, &mut y, "left");
+
+        assert_eq!(x, 98);
+        assert_eq!(y, 100);
+    }
+
+}
