@@ -1,2 +1,0 @@
-mod sieve;
-mod spiral;

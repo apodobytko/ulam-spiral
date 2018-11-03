@@ -1,43 +1,54 @@
 extern crate gdk;
 extern crate gio;
 extern crate gtk;
-extern crate gdk_pixbuf;
 extern crate image;
 
-mod sieve;
 mod spiral;
 
-use image::GenericImageView;
 use std::env::args;
 use self::gio::prelude::*;
 use self::gtk::prelude::*;
 
 use gtk::{WindowPosition};
-use gdk_pixbuf::{Colorspace, Pixbuf};
 
-use self::sieve::generate_primes;
-use self::spiral::generate_spiral;
+use self::spiral::Spiral;
 
-fn build_ui(app: &gtk::Application, image_vec: Vec<u8>) {
+fn build_ui(app: &gtk::Application) {
     let window = gtk::ApplicationWindow::new(app);
     window.set_title("Ulam Spiral Generator");
     window.set_position(WindowPosition::Center);
-    window.set_default_size(1200, 1200);
+    window.set_default_size(500, 500);
 
-    let image_parsed = image::load_from_memory(image_vec.as_slice()).unwrap();
+    let box_vert = gtk::Box::new(gtk::Orientation::Vertical, 5);
+    let button = gtk::Button::new_with_label("Generate spiral");
+    box_vert.pack_start(&button, false, false, 5);
+    window.add(&box_vert);
 
-    let pixbuff = Pixbuf::new_from_vec(
-        image_parsed.raw_pixels(),
-        Colorspace::Rgb,
-        false,
-        8,
-        image_parsed.width() as i32,
-        image_parsed.height() as i32,
-        3 * image_parsed.width() as i32
-    );
+    let box_weak = box_vert.downgrade();
+    let window_weak = window.downgrade();
 
-    let image_gtk = gtk::Image::new_from_pixbuf(&pixbuff);
-    window.add(&image_gtk);
+    button.connect_clicked(move |_| {
+        let window = match window_weak.upgrade() {
+            Some(window) => window,
+            None => return
+        };
+
+        let box_vert = match box_weak.upgrade() {
+            Some(b) => b,
+            None => return
+        };
+
+        let spiral = Spiral { x_size: 500, y_size: 500 };
+        let image_gtk = spiral.generate_to_gtk();
+
+        box_vert.remove(&image_gtk);
+        window.remove(&box_vert);
+
+        box_vert.add(&image_gtk);
+        window.add(&box_vert);
+        window.show_all();
+
+    });
 
     window.connect_delete_event(|win, _| {
         win.destroy();
@@ -51,9 +62,8 @@ fn main() {
         "com.ulam.spiral",
         gio::ApplicationFlags::empty()).expect("Initialization failed.");
     application.connect_startup(|app| {
-        let primes = generate_primes(100_000);
-        let image = generate_spiral(primes);
-        build_ui(app, image);
+
+        build_ui(app);
     });
     application.run(&args().collect::<Vec<_>>());
 
