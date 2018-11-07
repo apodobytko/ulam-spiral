@@ -5,6 +5,7 @@ extern crate gdk_pixbuf;
 
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use image::GenericImageView;
+use rand::Rng;
 
 
 mod sieve;
@@ -19,8 +20,6 @@ impl Spiral {
 
     pub fn generate_to_gtk(&self) -> gtk::Image {
         let image_vec = self.generate();
-
-
         let image_parsed = image::load_from_memory(image_vec.as_slice()).unwrap();
         let pixbuff = Pixbuf::new_from_vec(
             image_parsed.raw_pixels(),
@@ -111,7 +110,10 @@ impl Spiral {
     }
   
     fn random_colors() -> (u8, u8, u8) {
-        (rand::random(), rand::random(), rand::random())
+        let mut rng = rand::thread_rng();
+        let lower = 150;
+        let upper = 255;
+        (rng.gen_range(lower, upper), rng.gen_range(lower, upper), rng.gen_range(lower, upper))
     }
 
 }
