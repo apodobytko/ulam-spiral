@@ -40,8 +40,14 @@ fn create_main_window(app: &gtk::Application) -> gtk::ApplicationWindow {
     let window = gtk::ApplicationWindow::new(app);
     window.set_title("Ulam Spiral Generator");
     window.set_position(WindowPosition::Center);
-    window.set_default_size(700, 700);
+    window.set_default_size(400, 400);
     window
+}
+
+fn generate_image(adj: &gtk::Adjustment) -> gtk::Image {
+    let side_size: u32 = adj.get_value() as u32;
+    let spiral = Spiral { x_size: side_size, y_size: side_size };
+    spiral.generate_to_gtk()
 }
 
 fn build_ui(app: &gtk::Application) {
@@ -49,10 +55,15 @@ fn build_ui(app: &gtk::Application) {
 
     let image_map: Rc<RefCell<HashMap<usize, gtk::Image>>> = Rc::new(RefCell::new(HashMap::new()));
     let box_vert = gtk::Box::new(gtk::Orientation::Vertical, 50);
+    let box_horiz = gtk::Box::new(gtk::Orientation::Horizontal, 50);
     let button = gtk::Button::new_with_label("Generate spiral");
+    let adj = gtk::Adjustment::new(200.0, 10.0, 1000.0, 2.0, 0.0, 0.0);
+    let spin_button = gtk::SpinButton::new(&adj, 2.0, 0);
 
-    let spiral = Spiral { x_size: 500, y_size: 500 };
-    let image_gtk: gtk::Image = spiral.generate_to_gtk();
+    let image_gtk = generate_image(&adj);
+
+    box_horiz.pack_start(&spin_button, false, false, 20);
+    box_horiz.pack_end(&button, false, false, 20);
 
     image_map.borrow_mut().insert(1, image_gtk);
 
@@ -65,16 +76,18 @@ fn build_ui(app: &gtk::Application) {
         };
         box_vert.remove(image_map.borrow().get(&1).unwrap());
 
-        let image_gtk: gtk::Image = spiral.generate_to_gtk();
+        let image_gtk = generate_image(&adj);
+
         image_map.borrow_mut().insert(1, image_gtk);
         box_vert.pack_start(image_map.borrow().get(&1).unwrap(), false, false, 20);
         window.show_all();
     }));
 
     box_vert.pack_start(image_map.borrow().get(&1).unwrap(), false, false, 20);
-    box_vert.pack_end(&button, false, false, 5);
+    box_vert.pack_end(&box_horiz, false, false, 20);
 
     window.add(&box_vert);
+
     window.connect_delete_event(|win, _| {
         win.destroy();
         Inhibit(false)
