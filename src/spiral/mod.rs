@@ -34,9 +34,27 @@ impl Spiral {
 
     }
 
+    fn get_times(&self, times: u64, rel: f64, axis: &str) -> u64 {
+        let picture_vertical = self.y_size > self.x_size;
+        let res: u64;
+        if axis == "vertical" {
+            if picture_vertical {
+               res = (times as f64 / rel) as u64
+            } else {
+                res = (times as f64 * rel) as u64
+            }
+        } else if picture_vertical {
+            res = (times as f64 * rel) as u64
+        } else {
+            res = (times as f64 / rel) as u64
+        }
+        res
+    }
+
     pub fn generate(&self) -> Vec<u8> {
-        let primes = sieve::generate_primes(100_000);
+        let primes = sieve::generate_primes(u64::from(self.x_size * self.y_size));
         let mut img = image::ImageBuffer::new(self.x_size, self.y_size);
+
         let (red, green, blue) = Spiral::random_colors();
         let pixel = image::Rgb([red, green, blue]);
         let mut x = self.x_size / 2;
@@ -46,38 +64,39 @@ impl Spiral {
         let primes_len = primes.len();
         let mut stop = false;
 
-        img.put_pixel(x, y, pixel);
+        img.put_pixel(x, y, image::Rgb([255, 1, 1]));
+
+        let rel: f64 = f64::from(self.x_size) / f64::from(self.y_size);
 
         while !stop {
             times += 1;
-            for _ in 0..times {
+            for _ in 0..self.get_times(times, rel, "vertical") {
                 if (counter < primes_len) & (x > 2) {
-                    Spiral::move_cursor(&mut x, &mut y, "up");
+                    stop = self.move_cursor(&mut x, &mut y, "up");
                     if let 1 = primes[counter] { img.put_pixel(x, y, pixel) }
                     counter += 1;
                 }
             }
-
-            for _ in 0..times {
+            for _ in 0..self.get_times(times, rel, "horizontal") {
                 if (counter < primes_len) & (x > 2) {
-                    Spiral::move_cursor(&mut x, &mut y, "right");
+                    stop = self.move_cursor(&mut x, &mut y, "right");
                     if let 1 = primes[counter] { img.put_pixel(x, y, pixel) }
                     counter += 1;
                 }
             }
 
             times += 1;
-            for _ in 0..times {
+            for _ in 0..self.get_times(times, rel, "vertical") {
                 if (counter < primes_len) & (x > 2) {
-                    Spiral::move_cursor(&mut x, &mut y, "down");
+                    stop = self.move_cursor(&mut x, &mut y, "down");
                     if let 1 = primes[counter] { img.put_pixel(x, y, pixel) }
                     counter += 1;
                 }
             }
 
-            for _ in 0..times {
+            for _ in 0..self.get_times(times, rel, "horizontal") {
                 if (counter < primes_len) & (x > 2) {
-                    Spiral::move_cursor(&mut x, &mut y, "left");
+                    stop = self.move_cursor(&mut x, &mut y, "left");
                     if let 1 = primes[counter] { img.put_pixel(x, y, pixel) }
                     counter += 1;
                 }
@@ -94,8 +113,13 @@ impl Spiral {
         buf
     }
 
-    fn move_cursor(x: &mut u32, y: &mut u32, direction: &str) {
+    fn move_cursor(&self, x: &mut u32, y: &mut u32, direction: &str) -> bool {
         let step = 2;
+
+        if (*x <= 1) | (*y <= 1) | (*x >= self.x_size - step) | (*y >= self.y_size - step) {
+            return true
+        }
+
         if direction == "up" {
             *y -= step;
         } else if direction == "right" {
@@ -107,6 +131,7 @@ impl Spiral {
         } else {
             panic!("Choose something!")
         }
+        false
     }
   
     fn random_colors() -> (u8, u8, u8) {
@@ -129,7 +154,7 @@ mod tests {
     fn test_move_cursor_up() {
         let mut x = 100;
         let mut y = 100;
-        Spiral::move_cursor(&mut x, &mut y, "up");
+        self.move_cursor(&mut x, &mut y, "up");
 
         assert_eq!(x, 100);
         assert_eq!(y, 98);
@@ -139,7 +164,7 @@ mod tests {
     fn test_move_cursor_right() {
         let mut x = 100;
         let mut y = 100;
-        Spiral::move_cursor(&mut x, &mut y, "right");
+        self.move_cursor(&mut x, &mut y, "right");
 
         assert_eq!(x, 102);
         assert_eq!(y, 100);
@@ -149,7 +174,7 @@ mod tests {
     fn test_move_cursor_down() {
         let mut x = 100;
         let mut y = 100;
-        Spiral::move_cursor(&mut x, &mut y, "down");
+        self.move_cursor(&mut x, &mut y, "down");
 
         assert_eq!(x, 100);
         assert_eq!(y, 102);
@@ -159,7 +184,7 @@ mod tests {
     fn test_move_cursor_left() {
         let mut x = 100;
         let mut y = 100;
-        Spiral::move_cursor(&mut x, &mut y, "left");
+        self.move_cursor(&mut x, &mut y, "left");
 
         assert_eq!(x, 98);
         assert_eq!(y, 100);

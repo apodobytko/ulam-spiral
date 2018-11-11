@@ -44,9 +44,10 @@ fn create_main_window(app: &gtk::Application) -> gtk::ApplicationWindow {
     window
 }
 
-fn generate_image(adj: &gtk::Adjustment) -> gtk::Image {
-    let side_size: u32 = adj.get_value() as u32;
-    let spiral = Spiral { x_size: side_size, y_size: side_size };
+fn generate_image(adj_x: &gtk::Adjustment, adj_y: &gtk::Adjustment) -> gtk::Image {
+    let x_size: u32 = adj_x.get_value() as u32;
+    let y_size: u32 = adj_y.get_value() as u32;
+    let spiral = Spiral { x_size, y_size };
     spiral.generate_to_gtk()
 }
 
@@ -57,12 +58,15 @@ fn build_ui(app: &gtk::Application) {
     let box_vert = gtk::Box::new(gtk::Orientation::Vertical, 50);
     let box_horiz = gtk::Box::new(gtk::Orientation::Horizontal, 50);
     let button = gtk::Button::new_with_label("Generate spiral");
-    let adj = gtk::Adjustment::new(200.0, 10.0, 1000.0, 2.0, 0.0, 0.0);
-    let spin_button = gtk::SpinButton::new(&adj, 2.0, 0);
+    let adj_x = gtk::Adjustment::new(200.0, 10.0, 1000.0, 2.0, 0.0, 0.0);
+    let adj_y = gtk::Adjustment::new(400.0, 10.0, 1000.0, 2.0, 0.0, 0.0);
+    let spin_button_x = gtk::SpinButton::new(&adj_x, 2.0, 0);
+    let spin_button_y = gtk::SpinButton::new(&adj_y, 2.0, 0);
 
-    let image_gtk = generate_image(&adj);
+    let image_gtk = generate_image(&adj_x, &adj_y);
 
-    box_horiz.pack_start(&spin_button, false, false, 20);
+    box_horiz.pack_start(&spin_button_x, false, false, 20);
+    box_horiz.pack_start(&spin_button_y, false, false, 20);
     box_horiz.pack_end(&button, false, false, 20);
 
     image_map.borrow_mut().insert(1, image_gtk);
@@ -76,7 +80,7 @@ fn build_ui(app: &gtk::Application) {
         };
         box_vert.remove(image_map.borrow().get(&1).unwrap());
 
-        let image_gtk = generate_image(&adj);
+        let image_gtk = generate_image(&adj_x, &adj_y);
 
         image_map.borrow_mut().insert(1, image_gtk);
         box_vert.pack_start(image_map.borrow().get(&1).unwrap(), false, false, 20);
