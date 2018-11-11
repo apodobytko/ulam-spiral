@@ -19,7 +19,7 @@ pub struct Spiral {
 impl Spiral {
 
     pub fn generate_to_gtk(&self) -> gtk::Image {
-        let image_vec = self.generate();
+        let image_vec = self.generate_to_vec();
         let image_parsed = image::load_from_memory(image_vec.as_slice()).unwrap();
         let pixbuff = Pixbuf::new_from_vec(
             image_parsed.raw_pixels(),
@@ -34,7 +34,16 @@ impl Spiral {
 
     }
 
-    pub fn generate(&self) -> Vec<u8> {
+    pub fn generate_to_vec(&self) -> Vec<u8> {
+        let mut buf = Vec::new();
+        let img = self.generate();
+        let dynamic_image = image::DynamicImage::ImageRgb8(img);
+        dynamic_image.write_to(&mut buf, image::ImageOutputFormat::PNG)
+                     .expect("Failed to write the buffer!");
+        buf
+    }
+
+    pub fn generate(&self) -> image::ImageBuffer<image::Rgb<u8>, Vec<u8>> {
         let primes = sieve::generate_primes(100_000);
         let mut img = image::ImageBuffer::new(self.x_size, self.y_size);
         let (red, green, blue) = Spiral::random_colors();
@@ -86,12 +95,8 @@ impl Spiral {
                 stop = true;
             }
         }
-        let mut buf = Vec::new();
-        let dynamic_image = image::DynamicImage::ImageRgb8(img);
-        dynamic_image.write_to(&mut buf, image::ImageOutputFormat::PNG)
-                     .expect("Failed to write the buffer!");
         println!("Spiral generated.");
-        buf
+        img
     }
 
     fn move_cursor(x: &mut u32, y: &mut u32, direction: &str) {
