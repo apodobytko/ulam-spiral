@@ -3,9 +3,9 @@ extern crate image;
 extern crate gtk;
 extern crate gdk_pixbuf;
 
-use gdk_pixbuf::{Colorspace, Pixbuf};
-use image::GenericImageView;
-use rand::Rng;
+use self::gdk_pixbuf::{Colorspace, Pixbuf};
+use self::image::GenericImageView;
+use self::rand::Rng;
 
 
 mod sieve;
