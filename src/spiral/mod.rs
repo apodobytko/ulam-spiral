@@ -43,23 +43,6 @@ impl Spiral {
         buf
     }
 
-    fn get_times(&self, times: u64, rel: f64, axis: &str) -> u64 {
-        let picture_vertical = self.y_size > self.x_size;
-        let res: u64;
-        if axis == "vertical" {
-            if picture_vertical {
-               res = (times as f64 / rel) as u64
-            } else {
-                res = (times as f64 * rel) as u64
-            }
-        } else if picture_vertical {
-            res = (times as f64 * rel) as u64
-        } else {
-            res = (times as f64 / rel) as u64
-        }
-        res
-    }
-
     pub fn generate(&self) -> image::ImageBuffer<image::Rgb<u8>, Vec<u8>> {
         let primes = sieve::generate_primes(u64::from(self.x_size * self.y_size));
         let mut img = image::ImageBuffer::new(self.x_size, self.y_size);
@@ -76,40 +59,42 @@ impl Spiral {
         img.put_pixel(x, y, image::Rgb([255, 1, 1]));
 
         let rel: f64 = f64::from(self.x_size) / f64::from(self.y_size);
+        let mut turn = 0;
+
+        let directions = if self.x_size >= self.y_size {
+            &[
+                ("up", "vert"),
+                ("right", "horiz"),
+                ("down", "vert"),
+                ("left", "horiz"),
+            ]
+        } else {
+            &[
+                ("right", "horiz"),
+                ("down", "vert"),
+                ("left", "horiz"),
+                ("up", "vert"),
+            ]
+        };
 
         while !stop {
-            times += 1;
-            for _ in 0..self.get_times(times, rel, "vertical") {
-                if (counter < primes_len) & (x > 2) {
-                    stop = self.move_cursor(&mut x, &mut y, "up");
-                    if let 1 = primes[counter] { img.put_pixel(x, y, pixel) }
-                    counter += 1;
+
+            for (direction, axis) in directions {
+                turn += 1;
+
+                for _ in 0..self.get_times(times, rel, axis) {
+                    if (counter < primes_len) & (x > 2) {
+                        stop = self.move_cursor(&mut x, &mut y, direction);
+                        if let 1 = primes[counter] { img.put_pixel(x, y, pixel) }
+                        counter += 1;
+                    }
                 }
-            }
-            for _ in 0..self.get_times(times, rel, "horizontal") {
-                if (counter < primes_len) & (x > 2) {
-                    stop = self.move_cursor(&mut x, &mut y, "right");
-                    if let 1 = primes[counter] { img.put_pixel(x, y, pixel) }
-                    counter += 1;
+                if turn == 2 {
+                    times += 1;
+                    turn = 0;
                 }
             }
 
-            times += 1;
-            for _ in 0..self.get_times(times, rel, "vertical") {
-                if (counter < primes_len) & (x > 2) {
-                    stop = self.move_cursor(&mut x, &mut y, "down");
-                    if let 1 = primes[counter] { img.put_pixel(x, y, pixel) }
-                    counter += 1;
-                }
-            }
-
-            for _ in 0..self.get_times(times, rel, "horizontal") {
-                if (counter < primes_len) & (x > 2) {
-                    stop = self.move_cursor(&mut x, &mut y, "left");
-                    if let 1 = primes[counter] { img.put_pixel(x, y, pixel) }
-                    counter += 1;
-                }
-            }
             if (counter >= primes_len) | (x <= 2) {
                 stop = true;
             }
@@ -118,8 +103,24 @@ impl Spiral {
         img
     }
 
+    fn get_times(&self, times: u64, rel: f64, axis: &str) -> u64 {
+        let res: u64;
+        if self.y_size >= self.x_size {
+            if axis == "vert" {
+               res = (times as f64 / rel) as u64
+            } else {
+                res = (times as f64 * rel) as u64
+            }
+        } else if axis == "vert" {
+            res = (times as f64 / rel) as u64
+        } else {
+            res = (times as f64 * rel) as u64
+        }
+        res
+    }
+
     fn move_cursor(&self, x: &mut u32, y: &mut u32, direction: &str) -> bool {
-        let step = 2;
+        let step = 1;
 
         if (*x <= 1) | (*y <= 1) | (*x >= self.x_size - step) | (*y >= self.y_size - step) {
             return true
