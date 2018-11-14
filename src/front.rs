@@ -5,8 +5,8 @@ extern crate gtk;
 
 use self::gtk::prelude::*;
 
-
-use gtk::{FileChooserAction, FileChooserDialog, ResponseType, Window, WindowType};
+use std::path::PathBuf;
+use gtk::{FileChooserExt, FileChooserAction, FileChooserDialog, ResponseType, Window, WindowType};
 
 pub struct SaveDialog(FileChooserDialog);
 
@@ -20,8 +20,15 @@ impl SaveDialog {
                 ("Cancel", ResponseType::Cancel),
                 ("Save", ResponseType::Ok)]
         );
-        save_dialog.run();
         SaveDialog(save_dialog)
+    }
+
+    pub fn get_user_choice(&self) -> Option<PathBuf> {
+        match self.0.run().into() {
+            ResponseType::Ok => self.0.get_filename(),
+            ResponseType::Cancel => None,
+            _ => None,
+        }
     }
 }
 

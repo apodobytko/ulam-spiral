@@ -6,15 +6,16 @@ extern crate image;
 mod spiral;
 mod front;
 
-use std::env::args;
-use self::gio::prelude::*;
-use self::gtk::prelude::*;
-
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::path::PathBuf;
+use std::env::args;
 
-use gtk::{WindowPosition};
+use self::gio::prelude::*;
+use self::gtk::prelude::*;
+
+use gtk::WindowPosition;
 
 use self::spiral::Spiral;
 use self::front::SaveDialog;
@@ -53,8 +54,15 @@ fn generate_image(adj_x: &gtk::Adjustment, adj_y: &gtk::Adjustment) -> gtk::Imag
     spiral.generate_to_gtk()
 }
 
-fn write_image() {
-
+fn save_image(path: PathBuf, adj_x: &gtk::Adjustment, adj_y: &gtk::Adjustment) {
+    let x_size: u32 = adj_x.get_value() as u32;
+    let y_size: u32 = adj_y.get_value() as u32;
+    let spiral = Spiral { x_size, y_size };
+    let image = spiral.generate();
+    match image.save(path) {
+        Ok(_) => println!("Ok, saved!"),
+        Err(e) => println!("{}", e)
+    }
 }
 
 fn build_ui(app: &gtk::Application) {
@@ -97,10 +105,13 @@ fn build_ui(app: &gtk::Application) {
     }));
 
     save_button.connect_clicked(clone!(adj_x, adj_y => move |_| {
-        let img = generate_image(&adj_x, &adj_y);
         let save_dialog = SaveDialog::new();
-
-        write_image()
+        match save_dialog.get_user_choice() {
+            Some(path) => {
+                save_image(path, &adj_x, &adj_y);
+            },
+            None => { println!("srsly decide what u want to do"); return }
+        };
 
     }));
 
