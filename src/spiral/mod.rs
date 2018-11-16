@@ -158,41 +158,45 @@ mod tests {
 
     #[test]
     fn test_move_cursor_up() {
+        let spiral = Spiral{ x_size: 200, y_size: 200 };
         let mut x = 100;
         let mut y = 100;
-        self.move_cursor(&mut x, &mut y, "up");
+        spiral.move_cursor(&mut x, &mut y, "up");
 
         assert_eq!(x, 100);
-        assert_eq!(y, 98);
+        assert_eq!(y, 99);
     }
 
     #[test]
     fn test_move_cursor_right() {
+        let spiral = Spiral{ x_size: 200, y_size: 200 };
         let mut x = 100;
         let mut y = 100;
-        self.move_cursor(&mut x, &mut y, "right");
+        spiral.move_cursor(&mut x, &mut y, "right");
 
-        assert_eq!(x, 102);
+        assert_eq!(x, 101);
         assert_eq!(y, 100);
     }
 
     #[test]
     fn test_move_cursor_down() {
+        let spiral = Spiral{ x_size: 200, y_size: 200 };
         let mut x = 100;
         let mut y = 100;
-        self.move_cursor(&mut x, &mut y, "down");
+        spiral.move_cursor(&mut x, &mut y, "down");
 
         assert_eq!(x, 100);
-        assert_eq!(y, 102);
+        assert_eq!(y, 101);
     }
 
     #[test]
     fn test_move_cursor_left() {
+        let spiral = Spiral{ x_size: 200, y_size: 200 };
         let mut x = 100;
         let mut y = 100;
-        self.move_cursor(&mut x, &mut y, "left");
+        spiral.move_cursor(&mut x, &mut y, "left");
 
-        assert_eq!(x, 98);
+        assert_eq!(x, 99);
         assert_eq!(y, 100);
     }
 

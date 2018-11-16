@@ -9,8 +9,8 @@ mod front;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::path::PathBuf;
 use std::env::args;
+use std::path::PathBuf;
 
 use self::gio::prelude::*;
 use self::gtk::prelude::*;
@@ -18,7 +18,7 @@ use self::gtk::prelude::*;
 use gtk::WindowPosition;
 
 use self::spiral::Spiral;
-use self::front::SaveDialog;
+use self::front::{ErrorDialog, SaveDialog};
 
 // Helper macro that clones variables into a closure.
 // Borrowed from Gtk examples repo https://github.com/gtk-rs/examples/.
@@ -54,14 +54,24 @@ fn generate_image(adj_x: &gtk::Adjustment, adj_y: &gtk::Adjustment) -> gtk::Imag
     spiral.generate_to_gtk()
 }
 
-fn save_image(path: PathBuf, adj_x: &gtk::Adjustment, adj_y: &gtk::Adjustment) {
+fn save_image(path: &PathBuf, adj_x: &gtk::Adjustment, adj_y: &gtk::Adjustment) {
     let x_size: u32 = adj_x.get_value() as u32;
     let y_size: u32 = adj_y.get_value() as u32;
     let spiral = Spiral { x_size, y_size };
     let image = spiral.generate();
-    match image.save(path) {
-        Ok(_) => println!("Ok, saved!"),
-        Err(e) => println!("{}", e)
+
+    if let Some(extension) = path.extension() {
+        match extension.to_str().expect("Failed to parse file extension.") {
+            "png" | "jpeg" => {
+                match image.save(&path) {
+                    Ok(_) => println!("Ok, saved!"),
+                    Err(e) => ErrorDialog::show(&format!("Sorry, failed to save the file. {}", e)),
+                }
+            },
+            _ => {
+                ErrorDialog::show("Sorry, only png and jpeg file formats are supported.");
+            },
+        }
     }
 }
 
@@ -108,7 +118,7 @@ fn build_ui(app: &gtk::Application) {
         let save_dialog = SaveDialog::new();
         match save_dialog.get_user_choice() {
             Some(path) => {
-                save_image(path, &adj_x, &adj_y);
+                save_image(&path, &adj_x, &adj_y);
             },
             None => { println!("srsly decide what u want to do"); return }
         };
