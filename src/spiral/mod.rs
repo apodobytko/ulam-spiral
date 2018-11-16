@@ -7,17 +7,21 @@ use self::gdk_pixbuf::{Colorspace, Pixbuf};
 use self::image::GenericImageView;
 use self::rand::Rng;
 
-
 mod sieve;
+
+pub enum SpiralType {
+    Primes,
+    Random,
+}
 
 pub struct Spiral {
     pub x_size: u32,
     pub y_size: u32,
+    pub kind: SpiralType,
 }
 
 
 impl Spiral {
-
     pub fn generate_to_gtk(&self) -> gtk::Image {
         let image_vec = self.generate_to_vec();
         let image_parsed = image::load_from_memory(image_vec.as_slice()).unwrap();
@@ -44,7 +48,11 @@ impl Spiral {
     }
 
     pub fn generate(&self) -> image::ImageBuffer<image::Rgb<u8>, Vec<u8>> {
-        let primes = sieve::generate_primes(u64::from(self.x_size * self.y_size));
+        let numbers = match self.kind {
+            SpiralType::Primes => sieve::generate_primes(u64::from(self.x_size * self.y_size)),
+            SpiralType::Random => sieve::generate_random(u64::from(self.x_size * self.y_size)),
+        };
+
         let mut img = image::ImageBuffer::new(self.x_size, self.y_size);
 
         let (red, green, blue) = Spiral::random_colors();
@@ -53,7 +61,7 @@ impl Spiral {
         let mut y = self.y_size / 2;
         let mut counter = 0;
         let mut times = 0;
-        let primes_len = primes.len();
+        let numbers_len = numbers.len();
         let mut stop = false;
 
         img.put_pixel(x, y, image::Rgb([255, 1, 1]));
@@ -83,9 +91,9 @@ impl Spiral {
                 turn += 1;
 
                 for _ in 0..self.get_times(times, rel, axis) {
-                    if (counter < primes_len) & (x > 2) {
+                    if (counter < numbers_len) & (x > 2) {
                         stop = self.move_cursor(&mut x, &mut y, direction);
-                        if let 1 = primes[counter] { img.put_pixel(x, y, pixel) }
+                        if let 1 = numbers[counter] { img.put_pixel(x, y, pixel) }
                         counter += 1;
                     }
                 }
@@ -95,7 +103,7 @@ impl Spiral {
                 }
             }
 
-            if (counter >= primes_len) | (x <= 2) {
+            if (counter >= numbers_len) | (x <= 2) {
                 stop = true;
             }
         }
@@ -154,11 +162,11 @@ impl Spiral {
 #[cfg(test)]
 mod tests {
 
-    use self::super::Spiral;
+    use self::super::{Spiral, SpiralType};
 
     #[test]
     fn test_move_cursor_up() {
-        let spiral = Spiral{ x_size: 200, y_size: 200 };
+        let spiral = Spiral{ x_size: 200, y_size: 200, kind: SpiralType::Primes };
         let mut x = 100;
         let mut y = 100;
         spiral.move_cursor(&mut x, &mut y, "up");
@@ -169,7 +177,7 @@ mod tests {
 
     #[test]
     fn test_move_cursor_right() {
-        let spiral = Spiral{ x_size: 200, y_size: 200 };
+        let spiral = Spiral{ x_size: 200, y_size: 200, kind: SpiralType::Primes };
         let mut x = 100;
         let mut y = 100;
         spiral.move_cursor(&mut x, &mut y, "right");
@@ -180,7 +188,7 @@ mod tests {
 
     #[test]
     fn test_move_cursor_down() {
-        let spiral = Spiral{ x_size: 200, y_size: 200 };
+        let spiral = Spiral{ x_size: 200, y_size: 200, kind: SpiralType::Primes };
         let mut x = 100;
         let mut y = 100;
         spiral.move_cursor(&mut x, &mut y, "down");
@@ -191,7 +199,7 @@ mod tests {
 
     #[test]
     fn test_move_cursor_left() {
-        let spiral = Spiral{ x_size: 200, y_size: 200 };
+        let spiral = Spiral{ x_size: 200, y_size: 200, kind: SpiralType::Primes };
         let mut x = 100;
         let mut y = 100;
         spiral.move_cursor(&mut x, &mut y, "left");

@@ -1,3 +1,4 @@
+extern crate rand;
 
 pub fn generate_primes(max: u64) -> Vec<u64> {
     // Slightly optimized Sieve of Eratosthenes.
@@ -16,6 +17,10 @@ pub fn generate_primes(max: u64) -> Vec<u64> {
     candidates
 }
 
+pub fn generate_random(max: u64) -> Vec<u64> {
+    (0..max).map(|_| rand::random::<bool>() as u64)
+            .collect::<Vec<u64>>()
+}
 
 #[cfg(test)]
 mod tests {
