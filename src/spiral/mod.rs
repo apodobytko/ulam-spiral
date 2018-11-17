@@ -9,19 +9,36 @@ use self::rand::Rng;
 
 mod sieve;
 
+#[derive(Clone)]
 pub enum SpiralType {
     Primes,
     Random,
 }
 
+#[derive(Clone)]
 pub struct Spiral {
     pub x_size: u32,
     pub y_size: u32,
     pub kind: SpiralType,
+    pub color: (u8, u8, u8),
 }
 
 
 impl Spiral {
+    pub fn new(x_size: u32, y_size: u32, kind: SpiralType) -> Spiral {
+        let (red, green, blue) = Spiral::get_random_colors();
+        Spiral{ x_size, y_size, kind, color: (red, green, blue) }
+    }
+
+    pub fn randomize_color(&mut self) {
+        self.color = Spiral::get_random_colors();
+    }
+
+    pub fn set_size(&mut self, x_size: u32, y_size: u32) {
+        self.x_size = x_size;
+        self.y_size = y_size;
+    }
+
     pub fn generate_to_gtk(&self) -> gtk::Image {
         let image_vec = self.generate_to_vec();
         let image_parsed = image::load_from_memory(image_vec.as_slice()).unwrap();
@@ -54,8 +71,7 @@ impl Spiral {
         };
 
         let mut img = image::ImageBuffer::new(self.x_size, self.y_size);
-
-        let (red, green, blue) = Spiral::random_colors();
+        let (red, green, blue) = self.color;
         let pixel = image::Rgb([red, green, blue]);
         let mut x = self.x_size / 2;
         let mut y = self.y_size / 2;
@@ -148,13 +164,12 @@ impl Spiral {
         false
     }
   
-    fn random_colors() -> (u8, u8, u8) {
+    fn get_random_colors() -> (u8, u8, u8) {
         let mut rng = rand::thread_rng();
         let lower = 150;
         let upper = 255;
         (rng.gen_range(lower, upper), rng.gen_range(lower, upper), rng.gen_range(lower, upper))
     }
-
 }
 
 
@@ -166,7 +181,7 @@ mod tests {
 
     #[test]
     fn test_move_cursor_up() {
-        let spiral = Spiral{ x_size: 200, y_size: 200, kind: SpiralType::Primes };
+        let spiral = Spiral::new(200, 200, SpiralType::Primes);
         let mut x = 100;
         let mut y = 100;
         spiral.move_cursor(&mut x, &mut y, "up");
@@ -177,7 +192,7 @@ mod tests {
 
     #[test]
     fn test_move_cursor_right() {
-        let spiral = Spiral{ x_size: 200, y_size: 200, kind: SpiralType::Primes };
+        let spiral = Spiral::new(200, 200, SpiralType::Primes);
         let mut x = 100;
         let mut y = 100;
         spiral.move_cursor(&mut x, &mut y, "right");
@@ -188,7 +203,7 @@ mod tests {
 
     #[test]
     fn test_move_cursor_down() {
-        let spiral = Spiral{ x_size: 200, y_size: 200, kind: SpiralType::Primes };
+        let spiral = Spiral::new(200, 200, SpiralType::Primes);
         let mut x = 100;
         let mut y = 100;
         spiral.move_cursor(&mut x, &mut y, "down");
@@ -199,7 +214,7 @@ mod tests {
 
     #[test]
     fn test_move_cursor_left() {
-        let spiral = Spiral{ x_size: 200, y_size: 200, kind: SpiralType::Primes };
+        let spiral = Spiral::new(200, 200, SpiralType::Primes);
         let mut x = 100;
         let mut y = 100;
         spiral.move_cursor(&mut x, &mut y, "left");

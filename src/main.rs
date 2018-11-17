@@ -47,17 +47,13 @@ fn create_main_window(app: &gtk::Application) -> gtk::ApplicationWindow {
     window
 }
 
-fn generate_image(adj_x: &gtk::Adjustment, adj_y: &gtk::Adjustment) -> gtk::Image {
+fn generate_spiral(adj_x: &gtk::Adjustment, adj_y: &gtk::Adjustment) -> Rc<RefCell<Spiral>> {
     let x_size: u32 = adj_x.get_value() as u32;
     let y_size: u32 = adj_y.get_value() as u32;
-    let spiral = Spiral { x_size, y_size, kind: SpiralType::Primes };
-    spiral.generate_to_gtk()
+    Rc::new(RefCell::new(Spiral::new(x_size, y_size, SpiralType::Primes)))
 }
 
-fn save_image(path: &PathBuf, adj_x: &gtk::Adjustment, adj_y: &gtk::Adjustment) {
-    let x_size: u32 = adj_x.get_value() as u32;
-    let y_size: u32 = adj_y.get_value() as u32;
-    let spiral = Spiral { x_size, y_size, kind: SpiralType::Primes };
+fn save_image(spiral: &Spiral, path: &PathBuf) {
 
     if let Some(extension) = path.extension() {
         match extension.to_str().expect("Failed to parse file extension.") {
@@ -87,23 +83,14 @@ fn build_ui(app: &gtk::Application) {
     let adj_y = gtk::Adjustment::new(400.0, 10.0, 1000.0, 1.0, 0.0, 0.0);
     let save_button = gtk::Button::new_with_label("Save image");
 
-    let image_gtk = generate_image(&adj_x, &adj_y);
+    let spiral: Rc<RefCell<Spiral>> = generate_spiral(&adj_x, &adj_y);
+    let image_gtk = spiral.borrow().generate_to_gtk();
 
     let boxl = gtk::Box::new(gtk::Orientation::Vertical, 10);
     let boxr = gtk::Box::new(gtk::Orientation::Vertical, 10);
 
-    boxl.pack_start(
-        &gtk::SpinButton::new(&adj_x, 2.0, 0),
-        false,
-        false,
-        10
-    );
-    boxl.pack_start(
-        &SpinButton::new(&adj_y, 2.0, 0),
-        false,
-        false,
-        10
-    );
+    boxl.pack_start(&gtk::SpinButton::new(&adj_x, 2.0, 0), false, false, 10);
+    boxl.pack_start(&SpinButton::new(&adj_y, 2.0, 0), false, false, 10);
     boxr.pack_start(&generate_button, false, false, 10);
     boxr.pack_start(&save_button, false, false, 10);
 
@@ -114,29 +101,34 @@ fn build_ui(app: &gtk::Application) {
 
     let window_weak = window.downgrade();
 
-    generate_button.connect_clicked(clone!(box_vert, image_map, adj_x, adj_y => move |_| {
+    generate_button.connect_clicked(clone!(box_vert, image_map, spiral, adj_x, adj_y => move |_| {
         let window = match window_weak.upgrade() {
             Some(window) => window,
             None => return
         };
         box_vert.remove(image_map.borrow().get(&1).unwrap());
 
-        let image_gtk = generate_image(&adj_x, &adj_y);
+        spiral.borrow_mut().randomize_color();
+        spiral.borrow_mut().set_size(
+            adj_x.get_value() as u32,
+            adj_y.get_value() as u32
+        );
+        let image_gtk = spiral.borrow().generate_to_gtk();
 
         image_map.borrow_mut().insert(1, image_gtk);
         box_vert.pack_start(image_map.borrow().get(&1).unwrap(), false, false, 20);
         window.show_all();
     }));
 
-    save_button.connect_clicked(clone!(adj_x, adj_y => move |_| {
+    save_button.connect_clicked(move |_| {
         let save_dialog = SaveDialog::new();
         match save_dialog.get_user_choice() {
             Some(path) => {
-                save_image(&path, &adj_x, &adj_y);
+                save_image(&spiral.borrow(), &path);
             },
             None => return
         };
-    }));
+    });
 
     box_vert.pack_start(image_map.borrow().get(&1).unwrap(), false, false, 20);
     box_vert.pack_end(&box_horiz, true, true, 20);
