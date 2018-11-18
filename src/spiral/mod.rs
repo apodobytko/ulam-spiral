@@ -76,7 +76,7 @@ impl Spiral {
         let mut x = self.x_size / 2;
         let mut y = self.y_size / 2;
         let mut counter = 0;
-        let mut times = 0;
+        let mut times = 1;
         let numbers_len = numbers.len();
         let mut stop = false;
 
@@ -104,12 +104,14 @@ impl Spiral {
         while !stop {
 
             for (direction, axis) in directions {
-                turn += 1;
 
+                turn += 1;
                 for _ in 0..self.get_times(times, rel, axis) {
-                    if (counter < numbers_len) & (x > 2) {
+                    if counter < numbers_len {
                         stop = self.move_cursor(&mut x, &mut y, direction);
-                        if let 1 = numbers[counter] { img.put_pixel(x, y, pixel) }
+                        if numbers[counter] == 1 {
+                            img.put_pixel(x, y, pixel)
+                        }
                         counter += 1;
                     }
                 }
