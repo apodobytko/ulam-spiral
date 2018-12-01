@@ -10,7 +10,7 @@ use self::rand::Rng;
 mod sieve;
 
 #[derive(Clone)]
-pub enum SpiralType {
+pub enum SpiralKind {
     Primes,
     Random,
 }
@@ -19,13 +19,13 @@ pub enum SpiralType {
 pub struct Spiral {
     pub x_size: u32,
     pub y_size: u32,
-    pub kind: SpiralType,
+    pub kind: SpiralKind,
     pub color: (u8, u8, u8),
 }
 
 
 impl Spiral {
-    pub fn new(x_size: u32, y_size: u32, kind: SpiralType) -> Spiral {
+    pub fn new(x_size: u32, y_size: u32, kind: SpiralKind) -> Spiral {
         let (red, green, blue) = Spiral::get_random_colors();
         Spiral{ x_size, y_size, kind, color: (red, green, blue) }
     }
@@ -34,9 +34,13 @@ impl Spiral {
         self.color = Spiral::get_random_colors();
     }
 
-    pub fn set_size(&mut self, x_size: u32, y_size: u32) {
+    pub fn set_size(&mut self, x_size: u32) {
         self.x_size = x_size;
-        self.y_size = y_size;
+        self.y_size = x_size;
+    }
+
+    pub fn set_kind(&mut self, kind: SpiralKind) {
+        self.kind = kind;
     }
 
     pub fn generate_to_gtk(&self) -> gtk::Image {
@@ -52,7 +56,6 @@ impl Spiral {
             3 * image_parsed.width() as i32
         );
         gtk::Image::new_from_pixbuf(&pixbuff)
-
     }
 
     pub fn generate_to_vec(&self) -> Vec<u8> {
@@ -66,10 +69,9 @@ impl Spiral {
 
     pub fn generate(&self) -> image::ImageBuffer<image::Rgb<u8>, Vec<u8>> {
         let numbers = match self.kind {
-            SpiralType::Primes => sieve::generate_primes(u64::from(self.x_size * self.y_size)),
-            SpiralType::Random => sieve::generate_random(u64::from(self.x_size * self.y_size)),
+            SpiralKind::Primes => sieve::generate_primes(u64::from(self.x_size * self.y_size)),
+            SpiralKind::Random => sieve::generate_random(u64::from(self.x_size * self.y_size)),
         };
-
         let mut img = image::ImageBuffer::new(self.x_size, self.y_size);
         let (red, green, blue) = self.color;
         let pixel = image::Rgb([red, green, blue]);
@@ -79,34 +81,22 @@ impl Spiral {
         let mut times = 1;
         let numbers_len = numbers.len();
         let mut stop = false;
+        let mut turn = 0;
 
         img.put_pixel(x, y, image::Rgb([255, 1, 1]));
 
-        let rel: f64 = f64::from(self.x_size) / f64::from(self.y_size);
-        let mut turn = 0;
-
-        let directions = if self.x_size >= self.y_size {
-            &[
-                ("up", "vert"),
-                ("right", "horiz"),
-                ("down", "vert"),
-                ("left", "horiz"),
-            ]
-        } else {
-            &[
-                ("right", "horiz"),
-                ("down", "vert"),
-                ("left", "horiz"),
-                ("up", "vert"),
-            ]
-        };
+        let directions = &[
+            ("down", "vert"),
+            ("left", "horiz"),
+            ("up", "vert"),
+            ("right", "horiz")
+        ];
 
         while !stop {
 
-            for (direction, axis) in directions {
-
+            for (direction, _) in directions {
                 turn += 1;
-                for _ in 0..self.get_times(times, rel, axis) {
+                for _ in 0..times {
                     if counter < numbers_len {
                         stop = self.move_cursor(&mut x, &mut y, direction);
                         if numbers[counter] == 1 {
@@ -120,29 +110,12 @@ impl Spiral {
                     turn = 0;
                 }
             }
-
             if (counter >= numbers_len) | (x <= 2) {
                 stop = true;
             }
         }
         println!("Spiral generated.");
         img
-    }
-
-    fn get_times(&self, times: u64, rel: f64, axis: &str) -> u64 {
-        let res: u64;
-        if self.y_size >= self.x_size {
-            if axis == "vert" {
-               res = (times as f64 / rel) as u64
-            } else {
-                res = (times as f64 * rel) as u64
-            }
-        } else if axis == "vert" {
-            res = (times as f64 / rel) as u64
-        } else {
-            res = (times as f64 * rel) as u64
-        }
-        res
     }
 
     fn move_cursor(&self, x: &mut u32, y: &mut u32, direction: &str) -> bool {
@@ -179,11 +152,11 @@ impl Spiral {
 #[cfg(test)]
 mod tests {
 
-    use self::super::{Spiral, SpiralType};
+    use self::super::{Spiral, SpiralKind};
 
     #[test]
     fn test_move_cursor_up() {
-        let spiral = Spiral::new(200, 200, SpiralType::Primes);
+        let spiral = Spiral::new(200, 200, SpiralKind::Primes);
         let mut x = 100;
         let mut y = 100;
         spiral.move_cursor(&mut x, &mut y, "up");
@@ -194,7 +167,7 @@ mod tests {
 
     #[test]
     fn test_move_cursor_right() {
-        let spiral = Spiral::new(200, 200, SpiralType::Primes);
+        let spiral = Spiral::new(200, 200, SpiralKind::Primes);
         let mut x = 100;
         let mut y = 100;
         spiral.move_cursor(&mut x, &mut y, "right");
@@ -205,7 +178,7 @@ mod tests {
 
     #[test]
     fn test_move_cursor_down() {
-        let spiral = Spiral::new(200, 200, SpiralType::Primes);
+        let spiral = Spiral::new(200, 200, SpiralKind::Primes);
         let mut x = 100;
         let mut y = 100;
         spiral.move_cursor(&mut x, &mut y, "down");
@@ -216,7 +189,7 @@ mod tests {
 
     #[test]
     fn test_move_cursor_left() {
-        let spiral = Spiral::new(200, 200, SpiralType::Primes);
+        let spiral = Spiral::new(200, 200, SpiralKind::Primes);
         let mut x = 100;
         let mut y = 100;
         spiral.move_cursor(&mut x, &mut y, "left");

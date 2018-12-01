@@ -15,10 +15,12 @@ use std::path::PathBuf;
 use self::gio::prelude::*;
 use self::gtk::prelude::*;
 
-use gtk::{SpinButton, WindowPosition};
+use gtk::{Adjustment, Button, Label, SpinButton, RadioButton, WindowPosition};
 
-use self::spiral::{Spiral, SpiralType};
+use self::spiral::{Spiral, SpiralKind};
 use self::front::{ErrorDialog, SaveDialog};
+
+static INITIAL_SIDE_LEN: f64 = 500.0;
 
 // Helper macro that clones variables into a closure.
 // Borrowed from Gtk examples repo https://github.com/gtk-rs/examples/.
@@ -47,14 +49,12 @@ fn create_main_window(app: &gtk::Application) -> gtk::ApplicationWindow {
     window
 }
 
-fn generate_spiral(adj_x: &gtk::Adjustment, adj_y: &gtk::Adjustment) -> Rc<RefCell<Spiral>> {
+fn generate_spiral(adj_x: &Adjustment) -> Rc<RefCell<Spiral>> {
     let x_size: u32 = adj_x.get_value() as u32;
-    let y_size: u32 = adj_y.get_value() as u32;
-    Rc::new(RefCell::new(Spiral::new(x_size, y_size, SpiralType::Primes)))
+    Rc::new(RefCell::new(Spiral::new(x_size, x_size, SpiralKind::Primes)))
 }
 
 fn save_image(spiral: &Spiral, path: &PathBuf) {
-
     if let Some(extension) = path.extension() {
         match extension.to_str().expect("Failed to parse file extension.") {
             "png" | "jpeg" => {
@@ -74,47 +74,64 @@ fn save_image(spiral: &Spiral, path: &PathBuf) {
 fn build_ui(app: &gtk::Application) {
     let window = create_main_window(app);
 
+    // Instantiate hashmap which will help us mutate the image from within the closure. 
     let image_map: Rc<RefCell<HashMap<usize, gtk::Image>>> = Rc::new(RefCell::new(HashMap::new()));
+
+    // Add all buttons and controls.
     let box_vert = gtk::Box::new(gtk::Orientation::Vertical, 20);
     let box_horiz = gtk::Box::new(gtk::Orientation::Horizontal, 20);
-    let generate_button = gtk::Button::new_with_label("Generate spiral");
 
-    let adj_x = gtk::Adjustment::new(400.0, 10.0, 1000.0, 1.0, 0.0, 0.0);
-    let adj_y = gtk::Adjustment::new(400.0, 10.0, 1000.0, 1.0, 0.0, 0.0);
-    let save_button = gtk::Button::new_with_label("Save image");
+    let radio_primes = RadioButton::new_with_label("Prime numbers");
+    let radio_random = RadioButton::new_with_label_from_widget(&radio_primes, "Random odd numbers");
 
-    let spiral: Rc<RefCell<Spiral>> = generate_spiral(&adj_x, &adj_y);
+    let generate_button = Button::new_with_label("Generate spiral");
+    let adj_x = gtk::Adjustment::new(INITIAL_SIDE_LEN, 1.0, 1000.0, 1.0, 0.0, 0.0);
+    let save_button = Button::new_with_label("Save image");
+
+    let spiral: Rc<RefCell<Spiral>> = generate_spiral(&adj_x);
     let image_gtk = spiral.borrow().generate_to_gtk();
-
-    let boxl = gtk::Box::new(gtk::Orientation::Vertical, 10);
-    let boxr = gtk::Box::new(gtk::Orientation::Vertical, 10);
-
-    boxl.pack_start(&gtk::SpinButton::new(&adj_x, 2.0, 0), false, false, 10);
-    boxl.pack_start(&SpinButton::new(&adj_y, 2.0, 0), false, false, 10);
-    boxr.pack_start(&generate_button, false, false, 10);
-    boxr.pack_start(&save_button, false, false, 10);
-
-    box_horiz.pack_start(&boxl, true, false, 50);
-    box_horiz.pack_start(&boxr, true, false, 50);
-
     image_map.borrow_mut().insert(1, image_gtk);
+
+    let box_l = gtk::Box::new(gtk::Orientation::Vertical, 10);
+    let box_r = gtk::Box::new(gtk::Orientation::Vertical, 10);
+
+    let label = Label::new(None);
+    label.set_markup("<sup>Side size</sup>");
+
+    // Add items to layout boxes.
+    box_l.pack_start(&radio_primes, false, false, 2);
+    box_l.pack_start(&radio_random, false, false, 2);
+    box_l.pack_start(&SpinButton::new(&adj_x, 2.0, 0), false, false, 10);
+    box_l.add(&label);
+
+    box_r.pack_start(&generate_button, false, false, 10);
+    box_r.pack_start(&save_button, false, false, 10);
+
+    box_horiz.pack_start(&box_l, true, false, 50);
+    box_horiz.pack_start(&box_r, true, false, 50);
 
     let window_weak = window.downgrade();
 
-    generate_button.connect_clicked(clone!(box_vert, image_map, spiral, adj_x, adj_y => move |_| {
+    // Bind action to the generate button.
+    generate_button.connect_clicked(clone!(box_vert, image_map, spiral, adj_x, radio_primes => move |_| {
         let window = match window_weak.upgrade() {
             Some(window) => window,
             None => return
         };
-        box_vert.remove(image_map.borrow().get(&1).unwrap());
 
+        // Remove existing image from the hashmap.
+        box_vert.remove(image_map.borrow().get(&1).unwrap());
         spiral.borrow_mut().randomize_color();
-        spiral.borrow_mut().set_size(
-            adj_x.get_value() as u32,
-            adj_y.get_value() as u32
-        );
+        spiral.borrow_mut().set_size(adj_x.get_value() as u32);
+
+        if radio_primes.get_active() {
+            spiral.borrow_mut().set_kind(SpiralKind::Primes);
+        } else {
+            spiral.borrow_mut().set_kind(SpiralKind::Random);
+        }
         let image_gtk = spiral.borrow().generate_to_gtk();
 
+        // Add newly generated image.
         image_map.borrow_mut().insert(1, image_gtk);
         box_vert.pack_start(image_map.borrow().get(&1).unwrap(), false, false, 20);
         window.show_all();

@@ -18,7 +18,7 @@ pub fn generate_primes(max: u64) -> Vec<u64> {
 }
 
 pub fn generate_random(max: u64) -> Vec<u64> {
-    (0..max).map(|_| rand::random::<bool>() as u64)
+    (0..max).map(|n| if n % 2 > 0 { rand::random::<bool>() as u64 } else { 0 })
             .collect::<Vec<u64>>()
 }
 
