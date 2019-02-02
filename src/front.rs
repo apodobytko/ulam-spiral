@@ -1,13 +1,14 @@
-
 extern crate gdk;
 extern crate gio;
 extern crate gtk;
 
 use self::gtk::prelude::*;
 
+use gtk::{
+    ButtonsType, DialogFlags, FileChooserAction, FileChooserDialog, FileChooserExt, MessageDialog,
+    MessageType, ResponseType, Window, WindowType,
+};
 use std::path::PathBuf;
-use gtk::{ButtonsType, DialogFlags, FileChooserExt, FileChooserAction, FileChooserDialog,
-          MessageDialog, MessageType, ResponseType, Window, WindowType};
 
 pub struct SaveDialog(FileChooserDialog);
 
@@ -19,10 +20,7 @@ impl SaveDialog {
             Some("Save"),
             Some(&Window::new(WindowType::Popup)),
             FileChooserAction::Save,
-            &[
-                ("Cancel", ResponseType::Cancel),
-                ("Save", ResponseType::Ok)
-            ]
+            &[("Cancel", ResponseType::Cancel), ("Save", ResponseType::Ok)],
         );
         save_dialog.set_current_name("image.png");
         SaveDialog(save_dialog)
@@ -38,7 +36,9 @@ impl SaveDialog {
 }
 
 impl Drop for SaveDialog {
-    fn drop(&mut self) { self.0.destroy(); }
+    fn drop(&mut self) {
+        self.0.destroy();
+    }
 }
 
 impl ErrorDialog {

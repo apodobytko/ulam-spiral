@@ -1,7 +1,7 @@
-extern crate rand;
-extern crate image;
-extern crate gtk;
 extern crate gdk_pixbuf;
+extern crate gtk;
+extern crate image;
+extern crate rand;
 
 use self::gdk_pixbuf::{Colorspace, Pixbuf};
 use self::image::GenericImageView;
@@ -23,11 +23,15 @@ pub struct Spiral {
     pub color: (u8, u8, u8),
 }
 
-
 impl Spiral {
     pub fn new(x_size: u32, y_size: u32, kind: SpiralKind) -> Spiral {
         let (red, green, blue) = Spiral::get_random_colors();
-        Spiral{ x_size, y_size, kind, color: (red, green, blue) }
+        Spiral {
+            x_size,
+            y_size,
+            kind,
+            color: (red, green, blue),
+        }
     }
 
     pub fn randomize_color(&mut self) {
@@ -53,7 +57,7 @@ impl Spiral {
             8,
             image_parsed.width() as i32,
             image_parsed.height() as i32,
-            3 * image_parsed.width() as i32
+            3 * image_parsed.width() as i32,
         );
         gtk::Image::new_from_pixbuf(&pixbuff)
     }
@@ -62,8 +66,9 @@ impl Spiral {
         let mut buf = Vec::new();
         let img = self.generate();
         let dynamic_image = image::DynamicImage::ImageRgb8(img);
-        dynamic_image.write_to(&mut buf, image::ImageOutputFormat::PNG)
-                     .expect("Failed to write the buffer!");
+        dynamic_image
+            .write_to(&mut buf, image::ImageOutputFormat::PNG)
+            .expect("Failed to write the buffer!");
         buf
     }
 
@@ -85,16 +90,10 @@ impl Spiral {
 
         img.put_pixel(x, y, image::Rgb([255, 1, 1]));
 
-        let directions = &[
-            ("down", "vert"),
-            ("left", "horiz"),
-            ("up", "vert"),
-            ("right", "horiz")
-        ];
+        let directions = &["down", "left", "up", "right"];
 
         while !stop {
-
-            for (direction, _) in directions {
+            for direction in directions {
                 turn += 1;
                 for _ in 0..times {
                     if counter < numbers_len {
@@ -122,7 +121,7 @@ impl Spiral {
         let step = 1;
 
         if (*x <= 1) | (*y <= 1) | (*x >= self.x_size - step) | (*y >= self.y_size - step) {
-            return true
+            return true;
         }
 
         if direction == "up" {
@@ -138,16 +137,18 @@ impl Spiral {
         }
         false
     }
-  
+
     fn get_random_colors() -> (u8, u8, u8) {
         let mut rng = rand::thread_rng();
         let lower = 150;
         let upper = 255;
-        (rng.gen_range(lower, upper), rng.gen_range(lower, upper), rng.gen_range(lower, upper))
+        (
+            rng.gen_range(lower, upper),
+            rng.gen_range(lower, upper),
+            rng.gen_range(lower, upper),
+        )
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {

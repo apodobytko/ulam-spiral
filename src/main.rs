@@ -3,22 +3,22 @@ extern crate gio;
 extern crate gtk;
 extern crate image;
 
-mod spiral;
 mod front;
+mod spiral;
 
-use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::env::args;
 use std::path::PathBuf;
+use std::rc::Rc;
 
 use self::gio::prelude::*;
 use self::gtk::prelude::*;
 
-use gtk::{Adjustment, Button, Label, SpinButton, RadioButton, WindowPosition};
+use gtk::{Adjustment, Button, Label, RadioButton, SpinButton, WindowPosition};
 
-use self::spiral::{Spiral, SpiralKind};
 use self::front::{ErrorDialog, SaveDialog};
+use self::spiral::{Spiral, SpiralKind};
 
 static INITIAL_SIDE_LEN: f64 = 500.0;
 
@@ -51,7 +51,11 @@ fn create_main_window(app: &gtk::Application) -> gtk::ApplicationWindow {
 
 fn generate_spiral(adj_x: &Adjustment) -> Rc<RefCell<Spiral>> {
     let x_size: u32 = adj_x.get_value() as u32;
-    Rc::new(RefCell::new(Spiral::new(x_size, x_size, SpiralKind::Primes)))
+    Rc::new(RefCell::new(Spiral::new(
+        x_size,
+        x_size,
+        SpiralKind::Primes,
+    )))
 }
 
 fn save_image(spiral: &Spiral, path: &PathBuf) {
@@ -63,10 +67,10 @@ fn save_image(spiral: &Spiral, path: &PathBuf) {
                     Ok(_) => println!("Ok, saved!"),
                     Err(e) => ErrorDialog::show(&format!("Sorry, failed to save the file. {}", e)),
                 }
-            },
+            }
             _ => {
                 ErrorDialog::show("Sorry, only png and jpeg file formats are supported.");
-            },
+            }
         }
     }
 }
@@ -74,7 +78,7 @@ fn save_image(spiral: &Spiral, path: &PathBuf) {
 fn build_ui(app: &gtk::Application) {
     let window = create_main_window(app);
 
-    // Instantiate hashmap which will help us mutate the image from within the closure. 
+    // Instantiate hashmap which will help us mutate the image from within the closure.
     let image_map: Rc<RefCell<HashMap<usize, gtk::Image>>> = Rc::new(RefCell::new(HashMap::new()));
 
     // Add all buttons and controls.
@@ -113,7 +117,9 @@ fn build_ui(app: &gtk::Application) {
     let window_weak = window.downgrade();
 
     // Bind action to the generate button.
-    generate_button.connect_clicked(clone!(box_vert, image_map, spiral, adj_x, radio_primes => move |_| {
+    generate_button.connect_clicked(clone!(
+            box_vert, image_map, spiral, adj_x, radio_primes => move |_| {
+
         let window = match window_weak.upgrade() {
             Some(window) => window,
             None => return
@@ -142,8 +148,8 @@ fn build_ui(app: &gtk::Application) {
         match save_dialog.get_user_choice() {
             Some(path) => {
                 save_image(&spiral.borrow(), &path);
-            },
-            None => return
+            }
+            None => return,
         };
     });
 
@@ -160,12 +166,10 @@ fn build_ui(app: &gtk::Application) {
 }
 
 fn main() {
-    let application = gtk::Application::new(
-        "com.ulam.spiral",
-        gio::ApplicationFlags::empty()).expect("Initialization failed.");
+    let application = gtk::Application::new("com.ulam.spiral", gio::ApplicationFlags::empty())
+        .expect("Initialization failed.");
     application.connect_startup(|app| {
         build_ui(app);
     });
     application.run(&args().collect::<Vec<_>>());
-
 }
