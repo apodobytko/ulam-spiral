@@ -41,6 +41,29 @@ macro_rules! clone {
     );
 }
 
+type ImageRef = Rc<RefCell<HashMap<usize, gtk::Image>>>;
+
+#[derive(Clone)]
+struct ImageMap {
+    internal_value: ImageRef
+}
+
+impl ImageMap {
+    fn new() -> ImageMap {
+        ImageMap { internal_value: Rc::new(RefCell::new(HashMap::new())) }
+    }
+
+    fn get_image(&self) -> gtk::Image {
+        let image_map = self.internal_value.borrow();
+        let image = image_map.get(&1).unwrap();
+        image.clone()
+    }
+
+    fn set_image(&self, image_gtk: gtk::Image) {
+        self.internal_value.borrow_mut().insert(1, image_gtk);
+    }
+}
+
 fn create_main_window(app: &gtk::Application) -> gtk::ApplicationWindow {
     let window = gtk::ApplicationWindow::new(app);
     window.set_title("Ulam Spiral Generator");
@@ -78,8 +101,8 @@ fn save_image(spiral: &Spiral, path: &PathBuf) {
 fn build_ui(app: &gtk::Application) {
     let window = create_main_window(app);
 
-    // Instantiate hashmap which will help us mutate the image from within the closure.
-    let image_map: Rc<RefCell<HashMap<usize, gtk::Image>>> = Rc::new(RefCell::new(HashMap::new()));
+    // Instantiate the image container which will help us mutate the image from within the closure.
+    let image_map = ImageMap::new();
 
     // Add all buttons and controls.
     let box_vert = gtk::Box::new(gtk::Orientation::Vertical, 20);
@@ -94,7 +117,7 @@ fn build_ui(app: &gtk::Application) {
 
     let spiral: Rc<RefCell<Spiral>> = generate_spiral(&adj_x);
     let image_gtk = spiral.borrow().generate_to_gtk();
-    image_map.borrow_mut().insert(1, image_gtk);
+    image_map.set_image(image_gtk);
 
     let box_l = gtk::Box::new(gtk::Orientation::Vertical, 10);
     let box_r = gtk::Box::new(gtk::Orientation::Vertical, 10);
@@ -126,7 +149,7 @@ fn build_ui(app: &gtk::Application) {
         };
 
         // Remove existing image from the hashmap.
-        box_vert.remove(image_map.borrow().get(&1).unwrap());
+        box_vert.remove(&image_map.get_image());
         spiral.borrow_mut().randomize_color();
         spiral.borrow_mut().set_size(adj_x.get_value() as u32);
 
@@ -138,8 +161,8 @@ fn build_ui(app: &gtk::Application) {
         let image_gtk = spiral.borrow().generate_to_gtk();
 
         // Add newly generated image.
-        image_map.borrow_mut().insert(1, image_gtk);
-        box_vert.pack_start(image_map.borrow().get(&1).unwrap(), false, false, 20);
+        image_map.set_image(image_gtk);
+        box_vert.pack_start(&image_map.get_image(), false, false, 20);
         window.show_all();
     }));
 
@@ -153,7 +176,7 @@ fn build_ui(app: &gtk::Application) {
         };
     });
 
-    box_vert.pack_start(image_map.borrow().get(&1).unwrap(), false, false, 20);
+    box_vert.pack_start(&image_map.get_image(), false, false, 20);
     box_vert.pack_end(&box_horiz, true, true, 20);
 
     window.add(&box_vert);
