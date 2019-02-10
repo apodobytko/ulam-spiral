@@ -5,7 +5,6 @@ extern crate image;
 
 mod front;
 mod spiral;
-
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::env::args;
@@ -53,10 +52,12 @@ impl ImageMap {
         ImageMap { internal_value: Rc::new(RefCell::new(HashMap::new())) }
     }
 
-    fn get_image(&self) -> gtk::Image {
+    fn get_image(&self) -> Result<gtk::Image, &str> {
         let image_map = self.internal_value.borrow();
-        let image = image_map.get(&1).unwrap();
-        image.clone()
+        match image_map.get(&1) {
+            Some(image) => Ok(image.clone()),
+            None => Err("Expected an image!")
+        }
     }
 
     fn set_image(&self, image_gtk: gtk::Image) {
@@ -98,7 +99,7 @@ fn save_image(spiral: &Spiral, path: &PathBuf) {
     }
 }
 
-fn build_ui(app: &gtk::Application) {
+fn build_ui(app: &gtk::Application) -> Result<(), &str> {
     let window = create_main_window(app);
 
     // Instantiate the image container which will help us mutate the image from within the closure.
@@ -149,7 +150,10 @@ fn build_ui(app: &gtk::Application) {
         };
 
         // Remove existing image from the hashmap.
-        box_vert.remove(&image_map.get_image());
+        match image_map.get_image() {
+            Ok(image) => box_vert.remove(&image),
+            Err(e) => println!("{}", e),
+        }
         spiral.borrow_mut().randomize_color();
         spiral.borrow_mut().set_size(adj_x.get_value() as u32);
 
@@ -162,7 +166,12 @@ fn build_ui(app: &gtk::Application) {
 
         // Add newly generated image.
         image_map.set_image(image_gtk);
-        box_vert.pack_start(&image_map.get_image(), false, false, 20);
+
+        match image_map.get_image() {
+            Ok(image) => box_vert.pack_start(&image, false, false, 20),
+            Err(e) => println!("{}", e),
+        }
+        //}
         window.show_all();
     }));
 
@@ -176,7 +185,10 @@ fn build_ui(app: &gtk::Application) {
         };
     });
 
-    box_vert.pack_start(&image_map.get_image(), false, false, 20);
+    match image_map.get_image() {
+        Ok(image) => box_vert.pack_start(&image, false, false, 20),
+        Err(e) => println!("{}", e),
+    }
     box_vert.pack_end(&box_horiz, true, true, 20);
 
     window.add(&box_vert);
@@ -186,13 +198,17 @@ fn build_ui(app: &gtk::Application) {
         Inhibit(false)
     });
     window.show_all();
+    Ok(())
 }
 
 fn main() {
     let application = gtk::Application::new("com.ulam.spiral", gio::ApplicationFlags::empty())
         .expect("Initialization failed.");
     application.connect_startup(|app| {
-        build_ui(app);
+        match build_ui(app) {
+            Ok(_v) => (),
+            Err(e) => println!("Failed to build the app: {:?}", e),
+        }
     });
     application.run(&args().collect::<Vec<_>>());
 }
