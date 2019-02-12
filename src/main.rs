@@ -117,7 +117,7 @@ fn build_ui(app: &gtk::Application) -> Result<(), &str> {
     let save_button = Button::new_with_label("Save image");
 
     let spiral: Rc<RefCell<Spiral>> = generate_spiral(&adj_x);
-    let image_gtk = spiral.borrow().generate_to_gtk();
+    let image_gtk: gtk::Image = spiral.borrow().generate_to_gtk();
     image_map.set_image(image_gtk);
 
     let box_l = gtk::Box::new(gtk::Orientation::Vertical, 10);
@@ -162,7 +162,7 @@ fn build_ui(app: &gtk::Application) -> Result<(), &str> {
         } else {
             spiral.borrow_mut().set_kind(SpiralKind::Random);
         }
-        let image_gtk = spiral.borrow().generate_to_gtk();
+        let image_gtk: gtk::Image = spiral.borrow().generate_to_gtk();
 
         // Add newly generated image.
         image_map.set_image(image_gtk);
