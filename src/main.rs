@@ -6,7 +6,6 @@ extern crate image;
 mod front;
 mod spiral;
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::env::args;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -40,7 +39,7 @@ macro_rules! clone {
     );
 }
 
-type ImageRef = Rc<RefCell<HashMap<usize, gtk::Image>>>;
+type ImageRef = Rc<RefCell<Option<gtk::Image>>>;
 
 #[derive(Clone)]
 struct ImageMap {
@@ -49,19 +48,20 @@ struct ImageMap {
 
 impl ImageMap {
     fn new() -> ImageMap {
-        ImageMap { internal_value: Rc::new(RefCell::new(HashMap::new())) }
+        ImageMap { internal_value: Rc::new(RefCell::new(None)) }
     }
 
     fn get_image(&self) -> Result<gtk::Image, &str> {
         let image_map = self.internal_value.borrow();
-        match image_map.get(&1) {
+        match image_map.as_ref() {
             Some(image) => Ok(image.clone()),
             None => Err("Expected an image!")
         }
     }
 
     fn set_image(&self, image_gtk: gtk::Image) {
-        self.internal_value.borrow_mut().insert(1, image_gtk);
+        let mut image = self.internal_value.borrow_mut();
+        *image = Some(image_gtk);
     }
 }
 
