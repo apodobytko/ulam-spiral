@@ -42,18 +42,18 @@ macro_rules! clone {
 type ImageRef = Rc<RefCell<Option<gtk::Image>>>;
 
 #[derive(Clone)]
-struct ImageMap {
+struct ImageWrapper {
     internal_value: ImageRef
 }
 
-impl ImageMap {
-    fn new() -> ImageMap {
-        ImageMap { internal_value: Rc::new(RefCell::new(None)) }
+impl ImageWrapper {
+    fn new() -> ImageWrapper {
+        ImageWrapper { internal_value: Rc::new(RefCell::new(None)) }
     }
 
     fn get_image(&self) -> Result<gtk::Image, &str> {
-        let image_map = self.internal_value.borrow();
-        match image_map.as_ref() {
+        let image_wrapper = self.internal_value.borrow();
+        match image_wrapper.as_ref() {
             Some(image) => Ok(image.clone()),
             None => Err("Expected an image!")
         }
@@ -103,7 +103,7 @@ fn build_ui(app: &gtk::Application) -> Result<(), &str> {
     let window = create_main_window(app);
 
     // Instantiate the image container which will help us mutate the image from within the closure.
-    let image_map = ImageMap::new();
+    let image_wrapper = ImageWrapper::new();
 
     // Add all buttons and controls.
     let box_vert = gtk::Box::new(gtk::Orientation::Vertical, 20);
@@ -118,7 +118,7 @@ fn build_ui(app: &gtk::Application) -> Result<(), &str> {
 
     let spiral: Rc<RefCell<Spiral>> = generate_spiral(&adj_x);
     let image_gtk: gtk::Image = spiral.borrow().generate_to_gtk();
-    image_map.set_image(image_gtk);
+    image_wrapper.set_image(image_gtk);
 
     let box_l = gtk::Box::new(gtk::Orientation::Vertical, 10);
     let box_r = gtk::Box::new(gtk::Orientation::Vertical, 10);
@@ -142,7 +142,7 @@ fn build_ui(app: &gtk::Application) -> Result<(), &str> {
 
     // Bind action to the generate button.
     generate_button.connect_clicked(clone!(
-            box_vert, image_map, spiral, adj_x, radio_primes => move |_| {
+            box_vert, image_wrapper, spiral, adj_x, radio_primes => move |_| {
 
         let window = match window_weak.upgrade() {
             Some(window) => window,
@@ -150,7 +150,7 @@ fn build_ui(app: &gtk::Application) -> Result<(), &str> {
         };
 
         // Remove existing image from the hashmap.
-        match image_map.get_image() {
+        match image_wrapper.get_image() {
             Ok(image) => box_vert.remove(&image),
             Err(e) => println!("{}", e),
         }
@@ -165,9 +165,9 @@ fn build_ui(app: &gtk::Application) -> Result<(), &str> {
         let image_gtk: gtk::Image = spiral.borrow().generate_to_gtk();
 
         // Add newly generated image.
-        image_map.set_image(image_gtk);
+        image_wrapper.set_image(image_gtk);
 
-        match image_map.get_image() {
+        match image_wrapper.get_image() {
             Ok(image) => box_vert.pack_start(&image, false, false, 20),
             Err(e) => println!("{}", e),
         }
@@ -185,7 +185,7 @@ fn build_ui(app: &gtk::Application) -> Result<(), &str> {
         };
     });
 
-    match image_map.get_image() {
+    match image_wrapper.get_image() {
         Ok(image) => box_vert.pack_start(&image, false, false, 20),
         Err(e) => println!("{}", e),
     }
