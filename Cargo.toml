@@ -5,10 +5,11 @@ authors = ["sireliah <sajuukk@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-image = "*"
-glib = "*"
-gio = "*"
-gdk = "*"
-gtk = "*"
-gdk-pixbuf = "*"
-rand = "*"
+glib =  "0.17"
+gio =   "0.17"
+gdk =   "0.17"
+gtk =   "0.17"
+gdk-pixbuf = "0.17"
+
+image = "0.24"
+rand = "0.8"
