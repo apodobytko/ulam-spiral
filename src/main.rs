@@ -6,17 +6,16 @@ extern crate image;
 mod front;
 mod spiral;
 use std::cell::RefCell;
-use std::env::args;
 use std::path::PathBuf;
 use std::rc::Rc;
 
-use self::gio::prelude::*;
-use self::gtk::prelude::*;
+use gio::prelude::*;
+use gtk::prelude::*;
 
 use gtk::{Adjustment, Button, Label, RadioButton, SpinButton, WindowPosition};
 
-use self::front::{ErrorDialog, SaveDialog};
-use self::spiral::{Spiral, SpiralKind};
+use front::{ErrorDialog, SaveDialog};
+use spiral::{Spiral, SpiralKind};
 
 static INITIAL_SIDE_LEN: f64 = 500.0;
 
@@ -43,19 +42,21 @@ type ImageRef = Rc<RefCell<Option<gtk::Image>>>;
 
 #[derive(Clone)]
 struct ImageWrapper {
-    internal_value: ImageRef
+    internal_value: ImageRef,
 }
 
 impl ImageWrapper {
     fn new() -> ImageWrapper {
-        ImageWrapper { internal_value: Rc::new(RefCell::new(None)) }
+        ImageWrapper {
+            internal_value: Rc::new(RefCell::new(None)),
+        }
     }
 
     fn get_image(&self) -> Result<gtk::Image, &str> {
         let image_wrapper = self.internal_value.borrow();
         match image_wrapper.as_ref() {
             Some(image) => Ok(image.clone()),
-            None => Err("Expected an image!")
+            None => Err("Expected an image!"),
         }
     }
 
@@ -74,7 +75,7 @@ fn create_main_window(app: &gtk::Application) -> gtk::ApplicationWindow {
 }
 
 fn generate_spiral(adj_x: &Adjustment) -> Rc<RefCell<Spiral>> {
-    let x_size: u32 = adj_x.get_value() as u32;
+    let x_size: u32 = adj_x.value() as u32;
     Rc::new(RefCell::new(Spiral::new(
         x_size,
         x_size,
@@ -92,6 +93,7 @@ fn save_image(spiral: &Spiral, path: &PathBuf) {
                     Err(e) => ErrorDialog::show(&format!("Sorry, failed to save the file. {}", e)),
                 }
             }
+
             _ => {
                 ErrorDialog::show("Sorry, only png and jpeg file formats are supported.");
             }
@@ -109,12 +111,12 @@ fn build_ui(app: &gtk::Application) -> Result<(), &str> {
     let box_vert = gtk::Box::new(gtk::Orientation::Vertical, 20);
     let box_horiz = gtk::Box::new(gtk::Orientation::Horizontal, 20);
 
-    let radio_primes = RadioButton::new_with_label("Prime numbers");
-    let radio_random = RadioButton::new_with_label_from_widget(&radio_primes, "Random odd numbers");
+    let radio_primes = RadioButton::with_label("Prime numbers");
+    let radio_random = RadioButton::with_label_from_widget(&radio_primes, "Random odd numbers");
 
-    let generate_button = Button::new_with_label("Generate spiral");
+    let generate_button = Button::with_label("Generate spiral");
     let adj_x = gtk::Adjustment::new(INITIAL_SIDE_LEN, 1.0, 1000.0, 1.0, 0.0, 0.0);
-    let save_button = Button::new_with_label("Save image");
+    let save_button = Button::with_label("Save image");
 
     let spiral: Rc<RefCell<Spiral>> = generate_spiral(&adj_x);
     let image_gtk: gtk::Image = spiral.borrow().generate_to_gtk();
@@ -129,7 +131,7 @@ fn build_ui(app: &gtk::Application) -> Result<(), &str> {
     // Add items to layout boxes.
     box_l.pack_start(&radio_primes, false, false, 2);
     box_l.pack_start(&radio_random, false, false, 2);
-    box_l.pack_start(&SpinButton::new(&adj_x, 2.0, 0), false, false, 10);
+    box_l.pack_start(&SpinButton::new(Some(&adj_x), 2.0, 0), false, false, 10);
     box_l.add(&label);
 
     box_r.pack_start(&generate_button, false, false, 10);
@@ -155,9 +157,9 @@ fn build_ui(app: &gtk::Application) -> Result<(), &str> {
             Err(e) => println!("{}", e),
         }
         spiral.borrow_mut().randomize_color();
-        spiral.borrow_mut().set_size(adj_x.get_value() as u32);
+        spiral.borrow_mut().set_size(adj_x.value() as u32);
 
-        if radio_primes.get_active() {
+        if radio_primes.is_active() {
             spiral.borrow_mut().set_kind(SpiralKind::Primes);
         } else {
             spiral.borrow_mut().set_kind(SpiralKind::Random);
@@ -192,23 +194,25 @@ fn build_ui(app: &gtk::Application) -> Result<(), &str> {
     box_vert.pack_end(&box_horiz, true, true, 20);
 
     window.add(&box_vert);
-
     window.connect_delete_event(|win, _| {
-        win.destroy();
+        unsafe {
+            win.destroy();
+        }
         Inhibit(false)
     });
     window.show_all();
+
     Ok(())
 }
 
 fn main() {
-    let application = gtk::Application::new("com.ulam.spiral", gio::ApplicationFlags::empty())
-        .expect("Initialization failed.");
-    application.connect_startup(|app| {
-        match build_ui(app) {
-            Ok(_v) => (),
-            Err(e) => println!("Failed to build the app: {:?}", e),
-        }
+    let application =
+        gtk::Application::new(Some("com.ulam.spiral"), gio::ApplicationFlags::empty());
+
+    application.connect_startup(|app| match build_ui(app) {
+        Ok(_v) => (),
+        Err(e) => println!("Failed to build the app: {:?}", e),
     });
-    application.run(&args().collect::<Vec<_>>());
+
+    application.run();
 }

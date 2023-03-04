@@ -3,9 +3,8 @@ extern crate gtk;
 extern crate image;
 extern crate rand;
 
-use self::gdk_pixbuf::{Colorspace, Pixbuf};
-use self::image::GenericImageView;
-use self::rand::Rng;
+use gdk_pixbuf::{Colorspace, Pixbuf};
+use rand::Rng;
 
 mod sieve;
 
@@ -22,6 +21,11 @@ pub struct Spiral {
     pub kind: SpiralKind,
     pub color: (u8, u8, u8),
 }
+
+const UP: &str = "up";
+const DOWN: &str = "down";
+const LEFT: &str = "left";
+const RIGHT: &str = "right";
 
 impl Spiral {
     pub fn new(x_size: u32, y_size: u32, kind: SpiralKind) -> Spiral {
@@ -50,8 +54,11 @@ impl Spiral {
     pub fn generate_to_gtk(&self) -> gtk::Image {
         let image_vec = self.generate_to_vec();
         let image_parsed = image::load_from_memory(image_vec.as_slice()).unwrap();
-        let pixbuff = Pixbuf::new_from_vec(
-            image_parsed.raw_pixels(),
+
+        let bytes = glib::Bytes::from(image_parsed.as_bytes());
+
+        let pixbuff = Pixbuf::from_bytes(
+            &bytes,
             Colorspace::Rgb,
             false,
             8,
@@ -59,16 +66,21 @@ impl Spiral {
             image_parsed.height() as i32,
             3 * image_parsed.width() as i32,
         );
-        gtk::Image::new_from_pixbuf(&pixbuff)
+
+        gtk::Image::from_pixbuf(Some(&pixbuff))
     }
 
     pub fn generate_to_vec(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
+        let mut buf = vec![];
         let img = self.generate();
         let dynamic_image = image::DynamicImage::ImageRgb8(img);
+
+        let mut writer = std::io::Cursor::new(&mut buf);
+
         dynamic_image
-            .write_to(&mut buf, image::ImageOutputFormat::PNG)
+            .write_to(&mut writer, image::ImageOutputFormat::Png)
             .expect("Failed to write the buffer!");
+
         buf
     }
 
@@ -77,23 +89,24 @@ impl Spiral {
             SpiralKind::Primes => sieve::generate_primes(u64::from(self.x_size * self.y_size)),
             SpiralKind::Random => sieve::generate_random(u64::from(self.x_size * self.y_size)),
         };
-        let mut img = image::ImageBuffer::new(self.x_size, self.y_size);
         let (red, green, blue) = self.color;
         let pixel = image::Rgb([red, green, blue]);
+        let numbers_len = numbers.len();
+
+        let mut img = image::ImageBuffer::new(self.x_size, self.y_size);
         let mut x = self.x_size / 2;
         let mut y = self.y_size / 2;
         let mut counter = 0;
         let mut times = 1;
-        let numbers_len = numbers.len();
         let mut stop = false;
         let mut turn = 0;
 
         img.put_pixel(x, y, image::Rgb([255, 1, 1]));
 
-        let directions = &["down", "left", "up", "right"];
+        const DIRECTIONS: &[&str] = &[DOWN, LEFT, UP, RIGHT];
 
         while !stop {
-            for direction in directions {
+            for direction in DIRECTIONS {
                 turn += 1;
                 for _ in 0..times {
                     if counter < numbers_len {
@@ -113,7 +126,9 @@ impl Spiral {
                 stop = true;
             }
         }
+
         println!("Spiral generated.");
+
         img
     }
 
@@ -124,13 +139,13 @@ impl Spiral {
             return true;
         }
 
-        if direction == "up" {
+        if direction == UP {
             *y -= step;
-        } else if direction == "right" {
+        } else if direction == RIGHT {
             *x += step;
-        } else if direction == "down" {
+        } else if direction == DOWN {
             *y += step;
-        } else if direction == "left" {
+        } else if direction == LEFT {
             *x -= step;
         } else {
             panic!("Choose something!")
@@ -142,10 +157,11 @@ impl Spiral {
         let mut rng = rand::thread_rng();
         let lower = 150;
         let upper = 255;
+
         (
-            rng.gen_range(lower, upper),
-            rng.gen_range(lower, upper),
-            rng.gen_range(lower, upper),
+            rng.gen_range(lower..=upper),
+            rng.gen_range(lower..=upper),
+            rng.gen_range(lower..=upper),
         )
     }
 }
@@ -153,14 +169,14 @@ impl Spiral {
 #[cfg(test)]
 mod tests {
 
-    use self::super::{Spiral, SpiralKind};
+    use super::{Spiral, SpiralKind, DOWN, LEFT, RIGHT, UP};
 
     #[test]
     fn test_move_cursor_up() {
         let spiral = Spiral::new(200, 200, SpiralKind::Primes);
         let mut x = 100;
         let mut y = 100;
-        spiral.move_cursor(&mut x, &mut y, "up");
+        spiral.move_cursor(&mut x, &mut y, UP);
 
         assert_eq!(x, 100);
         assert_eq!(y, 99);
@@ -171,7 +187,7 @@ mod tests {
         let spiral = Spiral::new(200, 200, SpiralKind::Primes);
         let mut x = 100;
         let mut y = 100;
-        spiral.move_cursor(&mut x, &mut y, "right");
+        spiral.move_cursor(&mut x, &mut y, RIGHT);
 
         assert_eq!(x, 101);
         assert_eq!(y, 100);
@@ -182,7 +198,7 @@ mod tests {
         let spiral = Spiral::new(200, 200, SpiralKind::Primes);
         let mut x = 100;
         let mut y = 100;
-        spiral.move_cursor(&mut x, &mut y, "down");
+        spiral.move_cursor(&mut x, &mut y, DOWN);
 
         assert_eq!(x, 100);
         assert_eq!(y, 101);
@@ -193,10 +209,9 @@ mod tests {
         let spiral = Spiral::new(200, 200, SpiralKind::Primes);
         let mut x = 100;
         let mut y = 100;
-        spiral.move_cursor(&mut x, &mut y, "left");
+        spiral.move_cursor(&mut x, &mut y, LEFT);
 
         assert_eq!(x, 99);
         assert_eq!(y, 100);
     }
-
 }
