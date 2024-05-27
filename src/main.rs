@@ -115,7 +115,7 @@ fn build_ui(app: &gtk::Application) -> Result<(), &str> {
     let radio_random = RadioButton::with_label_from_widget(&radio_primes, "Random odd numbers");
 
     let generate_button = Button::with_label("Generate spiral");
-    let adj_x = gtk::Adjustment::new(INITIAL_SIDE_LEN, 1.0, 1000.0, 1.0, 0.0, 0.0);
+    let adj_x = gtk::Adjustment::new(INITIAL_SIDE_LEN, 1.0, 2000.0, 1.0, 0.0, 0.0);
     let save_button = Button::with_label("Save image");
 
     let spiral: Rc<RefCell<Spiral>> = generate_spiral(&adj_x);
